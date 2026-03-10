@@ -9,6 +9,7 @@ const ListingSchema = new mongoose.Schema(
     price: Number,
     userId: String,
     userName: String,
+    likedBy: { type: [String], default: [] },
   },
   { timestamps: true }
 );

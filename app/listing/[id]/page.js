@@ -11,17 +11,52 @@ export default function ListingDetailPage() {
   const router = useRouter();
   const [listing, setListing] = useState(null);
 
+  const fetchListing = async () => {
+    const res = await fetch(`/api/listings/${params.id}`);
+    const data = await res.json();
+    setListing(data);
+  };
+
   useEffect(() => {
-    const fetchListing = async () => {
-      const res = await fetch(`/api/listings/${params.id}`);
-      const data = await res.json();
-      setListing(data);
-    };
     fetchListing();
   }, [params.id]);
 
   const isCreator = listing && typeof window !== "undefined" &&
     String(listing.userId) === localStorage.getItem("userId");
+
+  const likedBy = listing?.likedBy || [];
+  const likeCount = likedBy.length;
+  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const hasLiked = currentUserId && likedBy.some((id) => String(id) === String(currentUserId));
+
+  const handleLike = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to like");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/listings/${params.id}/like`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setListing((prev) => ({
+          ...prev,
+          likedBy: data.likedBy || prev?.likedBy || [],
+        }));
+      } else {
+        alert(data.error || "Failed to like");
+        fetchListing();
+      }
+    } catch (err) {
+      alert("Failed to like");
+      fetchListing();
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this listing?")) return;
@@ -84,6 +119,26 @@ export default function ListingDetailPage() {
           <p className="mt-4 text-slate-500 dark:text-slate-400">
             Created by <span className="font-medium text-slate-700 dark:text-slate-300">{listing.userName}</span>
           </p>
+
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              onClick={handleLike}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              {hasLiked ? (
+                <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              )}
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {likeCount} {likeCount === 1 ? "like" : "likes"}
+              </span>
+            </button>
+          </div>
 
           {isCreator && (
             <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-3">
