@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CreatePage() {
 
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to create a listing");
+      router.push("/login");
+    }
+  }, [router]);
 
   const [title,setTitle] = useState("");
   const [location,setLocation] = useState("");
