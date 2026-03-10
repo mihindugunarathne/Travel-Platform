@@ -33,14 +33,35 @@ export async function POST(req) {
   }
 }
 
-export async function GET() {
+export async function GET(req) {
   try {
     await connectDB();
 
-    const listings = await Listing.find().sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page")) || 1;
+    const limit = parseInt(searchParams.get("limit")) || 6;
+    const skip = (page - 1) * limit;
 
-    return Response.json(listings);
+    let query = {};
+    if (search) {
+      query = {
+        $or: [
+          { title: { $regex: search, $options: "i" } },
+          { location: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
 
+    const total = await Listing.countDocuments(query);
+    const listings = await Listing.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const hasMore = skip + listings.length < total;
+
+    return Response.json({ listings, total, hasMore });
   } catch (error) {
     return Response.json({ error: "Server error" }, { status: 500 });
   }
