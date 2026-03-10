@@ -3,14 +3,30 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getEmailError, getPasswordError } from "@/lib/validations";
+import { useToast } from "@/components/ToastProvider";
 
 export default function LoginPage() {
+  const { error: showError } = useToast();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const emailError = getEmailError(email);
+    const passwordError = getPasswordError(password);
+
+    if (emailError || passwordError) {
+      setErrors({
+        email: emailError,
+        password: passwordError,
+      });
+      return;
+    }
+    setErrors({});
 
     const res = await fetch("/api/auth/login", {
       method: "POST",
@@ -26,7 +42,7 @@ export default function LoginPage() {
       localStorage.setItem("userId", data.user.id);
       router.push("/");
     } else {
-      alert(data.error);
+      showError(data.error);
     }
   };
 
@@ -44,22 +60,26 @@ export default function LoginPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <input
-              className={inputClass}
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              className={inputClass}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div>
+              <input
+                className={`${inputClass} ${errors.email ? "border-red-500" : ""}`}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: null })); }}
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <input
+                className={`${inputClass} ${errors.password ? "border-red-500" : ""}`}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: null })); }}
+              />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
             <button
               type="submit"
               className="w-full py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"

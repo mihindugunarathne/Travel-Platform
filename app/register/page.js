@@ -3,15 +3,33 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { getEmailError, getPasswordError } from "@/lib/validations";
+import { useToast } from "@/components/ToastProvider";
 
 export default function RegisterPage() {
+  const { success, error: showError } = useToast();
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const nameError = !name?.trim() ? "Name is required" : null;
+    const emailError = getEmailError(email);
+    const passwordError = getPasswordError(password, true);
+
+    if (nameError || emailError || passwordError) {
+      setErrors({
+        name: nameError,
+        email: emailError,
+        password: passwordError,
+      });
+      return;
+    }
+    setErrors({});
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -22,10 +40,10 @@ export default function RegisterPage() {
     const data = await res.json();
 
     if (res.ok) {
-      alert("Account created. Please login.");
+      success("Account created. Please login.");
       router.push("/login");
     } else {
-      alert(data.error);
+      showError(data.error);
     }
   };
 
@@ -43,29 +61,38 @@ export default function RegisterPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <input
-              className={inputClass}
-              placeholder="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <input
-              className={inputClass}
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <input
-              className={inputClass}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div>
+              <input
+                className={`${inputClass} ${errors.name ? "border-red-500" : ""}`}
+                placeholder="Name"
+                value={name}
+                onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: null })); }}
+                required
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+            <div>
+              <input
+                className={`${inputClass} ${errors.email ? "border-red-500" : ""}`}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: null })); }}
+                required
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <input
+                className={`${inputClass} ${errors.password ? "border-red-500" : ""}`}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: null })); }}
+                required
+              />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
             <button
               type="submit"
               className="w-full py-3 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors"

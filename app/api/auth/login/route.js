@@ -2,12 +2,22 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { getEmailError, getPasswordError } from "@/lib/validations";
 
 export async function POST(req) {
   try {
     await connectDB();
 
     const { email, password } = await req.json();
+
+    const emailError = getEmailError(email);
+    const passwordError = getPasswordError(password);
+    if (emailError || passwordError) {
+      return Response.json(
+        { error: emailError || passwordError },
+        { status: 400 }
+      );
+    }
 
     const user = await User.findOne({ email });
 

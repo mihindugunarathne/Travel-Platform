@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function Navbar() {
-
   const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
   const [user, setUser] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const desktopUserMenuRef = useRef(null);
+  const mobileUserMenuRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -22,7 +24,18 @@ export default function Navbar() {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const insideDesktop = desktopUserMenuRef.current?.contains(e.target);
+      const insideMobile = mobileUserMenuRef.current?.contains(e.target);
+      if (!insideDesktop && !insideMobile) setUserMenuOpen(false);
+    };
+    if (userMenuOpen) document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [userMenuOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -63,23 +76,28 @@ export default function Navbar() {
           </Link>
         </>
       )}
-      {loggedIn && (
-        <>
+      {loggedIn && user && (
+        <div className="relative" ref={desktopUserMenuRef}>
           <button
-            onClick={handleLogout}
-            className="px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-semibold shrink-0 hover:ring-2 hover:ring-teal-400 hover:ring-offset-2 transition-all"
+            title={user}
+            aria-expanded={userMenuOpen}
+            aria-haspopup="true"
           >
-            Logout
+            {user.charAt(0).toUpperCase()}
           </button>
-          {user && (
-            <div
-              className="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-semibold shrink-0"
-              title={user}
-            >
-              {user.charAt(0).toUpperCase()}
+          {userMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 py-1 min-w-[120px] rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                Logout
+              </button>
             </div>
           )}
-        </>
+        </div>
       )}
     </>
   );
@@ -103,12 +121,25 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <div className="flex md:hidden items-center gap-2">
-            {user && (
-              <div
-                className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-semibold"
-                title={user}
-              >
-                {user.charAt(0).toUpperCase()}
+            {loggedIn && user && (
+              <div className="relative" ref={mobileUserMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-semibold shrink-0"
+                  title={user}
+                >
+                  {user.charAt(0).toUpperCase()}
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 py-1 min-w-[120px] rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg z-50">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             <button
@@ -154,14 +185,6 @@ export default function Navbar() {
                     Sign up
                   </Link>
                 </>
-              )}
-              {loggedIn && (
-                <button
-                  onClick={handleLogout}
-                  className="text-left py-2 px-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors w-fit"
-                >
-                  Logout
-                </button>
               )}
             </div>
           </div>

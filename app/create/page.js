@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ToastProvider";
 
 export default function CreatePage() {
-
   const router = useRouter();
+  const { error: showError } = useToast();
   const fileInputRef = useRef(null);
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -18,21 +19,21 @@ export default function CreatePage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login to create a listing");
+      showError("Please login to create a listing");
       router.push("/login");
     }
-  }, [router]);
+  }, [router, showError]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file (JPEG, PNG, GIF, or WebP)");
+      showError("Please select an image file (JPEG, PNG, GIF, or WebP)");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be less than 5MB");
+      showError("Image must be less than 5MB");
       return;
     }
 
@@ -53,10 +54,10 @@ export default function CreatePage() {
         setImage(data.url);
         setImagePreview(data.url);
       } else {
-        alert(data.error || "Upload failed");
+        showError(data.error || "Upload failed");
       }
     } catch {
-      alert("Upload failed");
+      showError("Upload failed");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -67,7 +68,7 @@ export default function CreatePage() {
     e.preventDefault();
 
     if (!image) {
-      alert("Please upload an image");
+      showError("Please upload an image");
       return;
     }
 
@@ -90,7 +91,8 @@ export default function CreatePage() {
     if (res.ok) {
       router.push("/");
     } else {
-      alert("Error creating listing");
+      const data = await res.json();
+      showError(data.error || "Error creating listing");
     }
   };
 

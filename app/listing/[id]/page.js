@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { timeAgo } from "@/lib/time";
+import { useToast } from "@/components/ToastProvider";
 
 export default function ListingDetailPage() {
-
   const params = useParams();
   const router = useRouter();
+  const { error: showError } = useToast();
   const [listing, setListing] = useState(null);
 
   const fetchListing = async () => {
@@ -35,7 +36,7 @@ export default function ListingDetailPage() {
     e.stopPropagation();
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login to like");
+      showError("Please login to like");
       return;
     }
     try {
@@ -50,11 +51,11 @@ export default function ListingDetailPage() {
           likedBy: data.likedBy || prev?.likedBy || [],
         }));
       } else {
-        alert(data.error || "Failed to like");
+        showError(data.error || "Failed to like");
         fetchListing();
       }
     } catch (err) {
-      alert("Failed to like");
+      showError("Failed to like");
       fetchListing();
     }
   };
@@ -70,7 +71,7 @@ export default function ListingDetailPage() {
       router.push("/");
     } else {
       const data = await res.json();
-      alert(data.error || "Failed to delete");
+      showError(data.error || "Failed to delete");
     }
   };
 

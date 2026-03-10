@@ -1,6 +1,7 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { getEmailError, getPasswordError } from "@/lib/validations";
 
 export async function POST(req) {
   try {
@@ -8,8 +9,17 @@ export async function POST(req) {
 
     const { name, email, password } = await req.json();
 
-    if (!name || !email || !password) {
-      return Response.json({ error: "All fields are required" }, { status: 400 });
+    if (!name?.trim()) {
+      return Response.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    const emailError = getEmailError(email);
+    const passwordError = getPasswordError(password, true);
+    if (emailError || passwordError) {
+      return Response.json(
+        { error: emailError || passwordError },
+        { status: 400 }
+      );
     }
 
     const existingUser = await User.findOne({ email });

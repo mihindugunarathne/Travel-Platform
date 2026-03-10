@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useToast } from "@/components/ToastProvider";
 
 export default function EditListingPage() {
-
   const params = useParams();
   const router = useRouter();
+  const { error: showError } = useToast();
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -19,7 +20,7 @@ export default function EditListingPage() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login to edit a listing");
+      showError("Please login to edit a listing");
       router.push("/login");
       return;
     }
@@ -31,7 +32,7 @@ export default function EditListingPage() {
       if (res.ok) {
         const userId = localStorage.getItem("userId");
         if (String(data.userId) !== userId) {
-          alert("You can only edit your own listings");
+          showError("You can only edit your own listings");
           router.push(`/listing/${params.id}`);
           return;
         }
@@ -41,25 +42,25 @@ export default function EditListingPage() {
         setDescription(data.description || "");
         setPrice(data.price !== undefined && data.price !== null ? String(data.price) : "");
       } else {
-        alert("Listing not found");
+        showError("Listing not found");
         router.push("/");
       }
       setLoading(false);
     };
 
     fetchListing();
-  }, [params.id, router]);
+  }, [params.id, router, showError]);
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file (JPEG, PNG, GIF, or WebP)");
+      showError("Please select an image file (JPEG, PNG, GIF, or WebP)");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be less than 5MB");
+      showError("Image must be less than 5MB");
       return;
     }
 
@@ -79,10 +80,10 @@ export default function EditListingPage() {
       if (res.ok) {
         setImage(data.url);
       } else {
-        alert(data.error || "Upload failed");
+        showError(data.error || "Upload failed");
       }
     } catch {
-      alert("Upload failed");
+      showError("Upload failed");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -93,7 +94,7 @@ export default function EditListingPage() {
     e.preventDefault();
 
     if (!image) {
-      alert("Please upload an image");
+      showError("Please upload an image");
       return;
     }
 
@@ -117,7 +118,7 @@ export default function EditListingPage() {
       router.push(`/listing/${params.id}`);
     } else {
       const data = await res.json();
-      alert(data.error || "Error updating listing");
+      showError(data.error || "Error updating listing");
     }
   };
 
