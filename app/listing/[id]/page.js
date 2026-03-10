@@ -14,11 +14,12 @@ export default function ListingDetailPage() {
   const fetchListing = async () => {
     const res = await fetch(`/api/listings/${params.id}`);
     const data = await res.json();
-    setListing(data);
+    queueMicrotask(() => setListing(data));
   };
 
   useEffect(() => {
     fetchListing();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchListing uses params.id
   }, [params.id]);
 
   const isCreator = listing && typeof window !== "undefined" &&
